@@ -1,0 +1,37 @@
+name: Test npm token
+
+# Manual diagnostic: confirms the ovh org-level `NPM_TOKEN` secret is available to this
+# repository and can authenticate to npm. Run it from the Actions tab (Run workflow)
+# after an admin grants the repo access to the secret, before the first real release.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  npm-auth-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Check token is injected
+        run: |
+          if [ -z "$NODE_AUTH_TOKEN" ]; then
+            echo "::error::NPM_TOKEN is NOT injected — ask an org admin to grant this repo access to the secret."
+            exit 1
+          fi
+          echo "NPM_TOKEN is injected (len=${#NODE_AUTH_TOKEN})"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Ping npm registry
+        run: npm ping
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Who am I on npm
+        run: npm whoami
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
